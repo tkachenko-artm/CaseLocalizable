@@ -3,6 +3,12 @@ import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
 
+@main
+struct CaseLocalizablePlugin: CompilerPlugin {
+  var providingMacros: [Macro.Type] = [
+    CaseLocalizableMacro.self,
+  ]
+}
 public struct CaseLocalizableMacro: MemberMacro {
     public static func expansion(
         of node: AttributeSyntax,
@@ -29,7 +35,7 @@ public struct CaseLocalizableMacro: MemberMacro {
         // Generate the localizedTitle property
         let propertyDecl = """
         var localizedTitle: LocalizedStringResource {
-            LocalizedStringResource(rawValue, defaultValue: rawValue, table: \(tableValue))
+            LocalizedStringResource(self.rawValue, defaultValue: String.LocalizationValue(self.rawValue), table: \(tableValue))
         }
         """
         
@@ -39,11 +45,4 @@ public struct CaseLocalizableMacro: MemberMacro {
 
 enum CustomError: Error {
     case message(String)
-}
-
-@main
-struct CaseLocalizablePlugin: CompilerPlugin {
-    let providingMacros: [Macro.Type] = [
-        CaseLocalizableMacro.self
-    ]
 }

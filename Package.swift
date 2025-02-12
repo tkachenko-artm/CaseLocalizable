@@ -6,15 +6,14 @@ import CompilerPluginSupport
 
 let package = Package(
     name: "CaseLocalizable",
-    platforms: [ .iOS(.v17), .macOS(.v13)],
+    platforms: [.iOS(.v17), .macOS(.v13)],
     products: [
         .library(
             name: "CaseLocalizable",
-            targets: ["CaseLocalizable"]
-        )
+            targets: ["CaseLocalizable"])
     ],
     dependencies: [
-        .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "600.0.0-latest"),
+        .package(url: "https://github.com/apple/swift-syntax.git", from: "600.0.0-latest")
     ],
     targets: [
         .macro(
@@ -24,11 +23,14 @@ let package = Package(
                 .product(name: "SwiftCompilerPlugin", package: "swift-syntax")
             ]
         ),
-        .target(name: "CaseLocalizable", dependencies: ["CaseLocalizableMacros"]),
+        .target(
+            name: "CaseLocalizable",
+            dependencies: ["CaseLocalizableMacros"]
+        ),
         .testTarget(
             name: "CaseLocalizableTests",
             dependencies: [
-                "CaseLocalizableMacros",
+                "CaseLocalizable",
                 .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
             ]
         ),
