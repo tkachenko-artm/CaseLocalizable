@@ -3,31 +3,47 @@ import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
 
-/// Implementation of the `stringify` macro, which takes an expression
-/// of any type and produces a tuple containing the value of that expression
-/// and the source code that produced the value. For example
-///
-///     #stringify(x + y)
-///
-///  will expand to
-///
-///     (x + y, "x + y")
-public struct StringifyMacro: ExpressionMacro {
+public struct CaseLocalizableMacro: MemberMacro {
     public static func expansion(
-        of node: some FreestandingMacroExpansionSyntax,
+        of node: AttributeSyntax,
+        providingMembersOf declaration: some DeclGroupSyntax,
         in context: some MacroExpansionContext
-    ) -> ExprSyntax {
-        guard let argument = node.arguments.first?.expression else {
-            fatalError("compiler bug: the macro does not have any arguments")
+    ) throws -> [DeclSyntax] {
+        // Verify we're dealing with an enum
+        guard let enumDecl = declaration.as(EnumDeclSyntax.self) else {
+            throw CustomError.message("@CaseLocalizable can only be applied to enums")
         }
-
-        return "(\(argument), \(literal: argument.description))"
+        
+        // Check if enum has a raw value of type String
+        guard let inheritanceClause = enumDecl.inheritanceClause,
+              inheritanceClause.inheritedTypes.contains(where: { type in
+                  type.type.as(IdentifierTypeSyntax.self)?.name.text == "String"
+              }) else {
+            throw CustomError.message("@CaseLocalizable can only be applied to enums with String raw value")
+        }
+        
+        // Extract table parameter
+        let tableArg = node.arguments?.as(LabeledExprListSyntax.self)?.first?.expression
+        let tableValue = tableArg?.as(StringLiteralExprSyntax.self)?.segments.first?.as(StringSegmentSyntax.self)?.content.text ?? ""
+        
+        // Generate the localizedTitle property
+        let propertyDecl = """
+        var localizedTitle: LocalizedStringResource {
+            LocalizedStringResource(String(describing: self.rawValue), table: \(tableValue))
+        }
+        """
+        
+        return [DeclSyntax(stringLiteral: propertyDecl)]
     }
+}
+
+enum CustomError: Error {
+    case message(String)
 }
 
 @main
 struct CaseLocalizablePlugin: CompilerPlugin {
     let providingMacros: [Macro.Type] = [
-        StringifyMacro.self,
+        CaseLocalizableMacro.self
     ]
 }

@@ -3,46 +3,50 @@ import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
 import XCTest
-
-// Macro implementations build for the host, so the corresponding module is not available when cross-compiling. Cross-compiled tests may still make use of the macro itself in end-to-end tests.
-#if canImport(CaseLocalizableMacros)
 import CaseLocalizableMacros
 
-let testMacros: [String: Macro.Type] = [
-    "stringify": StringifyMacro.self,
-]
-#endif
-
 final class CaseLocalizableTests: XCTestCase {
-    func testMacro() throws {
-        #if canImport(CaseLocalizableMacros)
+    let testMacros: [String: Macro.Type] = [
+        "CaseLocalizable": CaseLocalizableMacro.self,
+    ]
+    
+    func testMacroWithTable() {
         assertMacroExpansion(
             """
-            #stringify(a + b)
+            @CaseLocalizable(table: "Sport")
+            enum Sport: String {
+                case football = "word_sport_football"
+            }
             """,
             expandedSource: """
-            (a + b, "a + b")
+            enum Sport: String {
+                case football = "word_sport_football"
+                var localizedTitle: LocalizedStringResource {
+                    LocalizedStringResource(String(describing: self.rawValue), table: "Sport")
+                }
+            }
             """,
             macros: testMacros
         )
-        #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
-        #endif
     }
-
-    func testMacroWithStringLiteral() throws {
-        #if canImport(CaseLocalizableMacros)
+    
+    func testMacroWithoutTable() {
         assertMacroExpansion(
-            #"""
-            #stringify("Hello, \(name)")
-            """#,
-            expandedSource: #"""
-            ("Hello, \(name)", #""Hello, \(name)""#)
-            """#,
+            """
+            @CaseLocalizable
+            enum Sport: String {
+                case football = "word_sport_football"
+            }
+            """,
+            expandedSource: """
+            enum Sport: String {
+                case football = "word_sport_football"
+                var localizedTitle: LocalizedStringResource {
+                    LocalizedStringResource(String(describing: self.rawValue), table: nil)
+                }
+            }
+            """,
             macros: testMacros
         )
-        #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
-        #endif
     }
 }
