@@ -24,12 +24,12 @@ public struct CaseLocalizableMacro: MemberMacro {
         
         // Extract table parameter
         let tableArg = node.arguments?.as(LabeledExprListSyntax.self)?.first?.expression
-        let tableValue = tableArg?.as(StringLiteralExprSyntax.self)?.segments.first?.as(StringSegmentSyntax.self)?.content.text ?? ""
+        let tableValue = tableArg?.as(StringLiteralExprSyntax.self)?.segments.first?.as(StringSegmentSyntax.self)?.content.text
         
         // Generate the localizedTitle property
         let propertyDecl = """
         var localizedTitle: LocalizedStringResource {
-            LocalizedStringResource(String(describing: self.rawValue), table: \(tableValue))
+            LocalizedStringResource(rawValue, defaultValue: rawValue, table: \(tableValue))
         }
         """
         
